@@ -16,6 +16,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/reimbursements")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class ReimbursementController {
 
     private ReimbursementService reimbService;
@@ -96,7 +97,7 @@ public class ReimbursementController {
 
     // Resolve a reimb (from PENDING to APPROVED/DENIED)
     @PatchMapping("/{reimbId}/resolve")
-    public ResponseEntity<Object> resolveReimb(@RequestBody String status, @PathVariable int reimbId, HttpSession session) {
+    public ResponseEntity<Object> resolveReimb(@RequestBody IncomingReimbDTO status, @PathVariable int reimbId, HttpSession session) {
 
         // Check for login
         if (session.getAttribute("userId") == null) {
@@ -116,7 +117,7 @@ public class ReimbursementController {
 
         // Reimb is found, set values
         Reimbursement r = optionalReimbursement.get();
-        r.setStatus(status);
+        r.setStatus(status.getStatus());
 
         return ResponseEntity.ok(reimbService.resolveReimb(r));
     }
@@ -124,7 +125,7 @@ public class ReimbursementController {
 
     // Update desc of reimb
     @PatchMapping("/{reimbId}/description")
-    public ResponseEntity<Object> updateReimb(@RequestBody String desc, @PathVariable int reimbId, HttpSession session) {
+    public ResponseEntity<Object> updateReimb(@RequestBody IncomingReimbDTO desc, @PathVariable int reimbId, HttpSession session) {
 
         // Check for login
         if (session.getAttribute("userId") == null) {
@@ -144,7 +145,7 @@ public class ReimbursementController {
 
         // set values
         Reimbursement r = optionalReimbursement.get();
-        r.setDescription(desc);
+        r.setDescription(desc.getDescription());
 
         return ResponseEntity.ok(reimbService.resolveReimb(r));
     }

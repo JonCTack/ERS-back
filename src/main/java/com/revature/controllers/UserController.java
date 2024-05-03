@@ -15,6 +15,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/users")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class UserController {
 
     private UserService userService;
@@ -95,7 +96,7 @@ public class UserController {
     // Update an employee's status to manager
     // TODO: Not sure if we need to pass MANAGER or automatically assume MANAGER for role
     @PatchMapping("/{userId}")
-    public ResponseEntity<Object> updateRole(@PathVariable int userId, @RequestBody String role, HttpSession session) {
+    public ResponseEntity<Object> updateRole(@PathVariable int userId, @RequestBody IncomingUserDTO role, HttpSession session) {
         // Check session
 
         // Invalid login session
@@ -118,7 +119,7 @@ public class UserController {
 
         // If user is found, set role
         User u = optionalUser.get();
-        u.setRole(role);
+        u.setRole(role.getRole());
 
         return ResponseEntity.accepted().body(userService.updateRole(u));
     }
@@ -144,7 +145,8 @@ public class UserController {
             return ResponseEntity.ok(new OutgoingUserDTO(
                     u.getUserId(),
                     u.getFirstName(),
-                    u.getLastName()));
+                    u.getLastName(),
+                    u.getRole()));
 
         } catch (Exception e) {
             return ResponseEntity.status(401).body(e.getMessage());

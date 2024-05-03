@@ -64,7 +64,7 @@ public class UserService {
         // Create an arrayList to hold outgoing users using a DTO to give only required data (no username/password)
         List<OutgoingUserDTO> outgoingUserList = new ArrayList<>();
         for (User u : userList) {
-            OutgoingUserDTO outUser = new OutgoingUserDTO(u.getUserId(), u.getFirstName(), u.getLastName());
+            OutgoingUserDTO outUser = new OutgoingUserDTO(u.getUserId(), u.getFirstName(), u.getLastName(), u.getRole());
             outgoingUserList.add(outUser);
         }
         return outgoingUserList;
