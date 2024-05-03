@@ -1,63 +1,29 @@
-package com.revature.models;
+package com.revature.models.dtos;
 
-import jakarta.persistence.*;
-import org.springframework.stereotype.Component;
+// Incoming user used for registering
+// Probably contains just username/password
 
-import java.util.List;
-
-@Component
-@Entity
-@Table(name="users")
-public class User {
-
-    @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private int userId;
-
-    @Column(nullable=false)
+public class IncomingUserDTO {
     private String firstName;
-
-    @Column(nullable=false)
     private String lastName;
-
-    @Column(nullable=false, unique=true)
     private String username;
-
-    @Column(nullable=false)
     private String password;
-
-    @Column(nullable=false)
     private String role;
 
-    @OneToMany(mappedBy="user", fetch=FetchType.EAGER, cascade=CascadeType.ALL)
-    private List<Reimbursement> reimbursements;
-
-    public User() {
+    public IncomingUserDTO() {
     }
 
-    public User(String firstName, String lastName, String username, String password, String role) {
+    public IncomingUserDTO(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+
+    public IncomingUserDTO(String firstName, String lastName, String username, String password, String role) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.username = username;
         this.password = password;
         this.role = role;
-    }
-
-    public User(int userId, String firstName, String lastName, String username, String password, String role) {
-        this.userId = userId;
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.username = username;
-        this.password = password;
-        this.role = role;
-    }
-
-    public int getUserId() {
-        return userId;
-    }
-
-    public void setUserId(int userId) {
-        this.userId = userId;
     }
 
     public String getFirstName() {
@@ -102,9 +68,8 @@ public class User {
 
     @Override
     public String toString() {
-        return "User{" +
-                "userId=" + userId +
-                ", firstName='" + firstName + '\'' +
+        return "IncomingUserDTO{" +
+                "firstName='" + firstName + '\'' +
                 ", lastName='" + lastName + '\'' +
                 ", username='" + username + '\'' +
                 ", password='" + password + '\'' +

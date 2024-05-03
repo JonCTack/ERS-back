@@ -1,124 +1,151 @@
 package com.revature.controllers;
 
-import com.revature.daos.ReimbursementDAO;
-import com.revature.daos.UserDAO;
 import com.revature.models.Reimbursement;
-import com.revature.models.User;
+import com.revature.models.dtos.IncomingReimbDTO;
+import com.revature.models.dtos.OutgoingReimbDTO;
+import com.revature.services.ReimbursementService;
+import jakarta.servlet.http.HttpSession;
+import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.awt.image.PixelGrabber;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/reimbursements")
 public class ReimbursementController {
 
-    private ReimbursementDAO reimbDAO;
-    private UserDAO userDAO;
+    private ReimbursementService reimbService;
 
     @Autowired
-    public ReimbursementController(ReimbursementDAO reimbDao, UserDAO userDAO) {
-        this.reimbDAO = reimbDAO;
-        this.userDAO = userDAO;
+    public ReimbursementController(ReimbursementService reimbService) {
+        this.reimbService = reimbService;
     }
 
     // Create new reimb
-    @PostMapping
-    public ResponseEntity<Object> addReimb(Reimbursement reimb) {
-        Reimbursement r = reimbDAO.save(reimb);
+    @PostMapping("/create")
+    public ResponseEntity<String> addReimb(@RequestBody IncomingReimbDTO reimbDTO, HttpSession session) {
+        // User data will be in session, reimb data in reimb
 
-        if(r == null) {
-            return ResponseEntity.internalServerError().build();
+        // Check for login
+        if (session.getAttribute("userId") == null) {
+            return ResponseEntity.status(401).body("You need to be logged in to do this");
         }
 
-        return ResponseEntity.ok(r);
+        // Grab current user to attach to reimb TODO: Remember to cast (int)
+        reimbDTO.setUserId((int)session.getAttribute("userId"));
+
+        // addReimb throws error, so try catch, return entire Reimb object
+        try {
+            // Creating a new object to make sure data is saved
+            Reimbursement r = reimbService.addReimb(reimbDTO);
+            return ResponseEntity.ok("Reimbursement process for " + "$" + r.getAmount() + " has been successfully initialized");
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
+
     }
 
-    // TODO: Check if this is possible in one or reuse getAllReimbs/getAllPendingReimbs
     // Get ALL reimb (for userID) && (manager) ==== Need to check if user is MANAGER
     @GetMapping
-    public ResponseEntity<List<Reimbursement>> getAllReimbs(User u) {
+    public ResponseEntity<?> getAllReimbs(HttpSession session) {
+
+        // Check for login
+        if (session.getAttribute("userId") == null) {
+            return ResponseEntity.status(401).body("You need to be logged in to do this");
+        }
+
+        // Get all reimbursements
+        List<OutgoingReimbDTO> reimbList = reimbService.getAllReimbs(
+                (String)session.getAttribute("role"),
+                (int)session.getAttribute("userId"));
 
         // If reimb list is empty
-        List<Reimbursement> reimbList = reimbDAO.findAll();
         if (reimbList.isEmpty()) {
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.status(204).body("There are no reimbursements here for you :(");
         }
 
-        // If user is a MANAGER
-        if (u.getRole().equals("MANAGER")) {
-            return ResponseEntity.ok(reimbList);
-        }
-
-        // If user is NOT a MANAGER
-        List<Reimbursement> userReimbs = new ArrayList<>();
-        for (Reimbursement reimb : reimbList) {
-            if (reimb.getUserId() == u.getUserId()) {
-                userReimbs.add(reimb);
-            }
-        }
-        return ResponseEntity.ok(userReimbs);
+        return ResponseEntity.ok(reimbList);
     }
 
-    // Get ALL reimb (status == PENDING) (manager)
-    @GetMapping
-    public ResponseEntity<List<Reimbursement>> getAllPendingReimbs(User u) {
+    // Get ALL <STATUS> reimbs
+    @GetMapping("/status")
+    public ResponseEntity<?> getAllStatusReimbs(@RequestBody String status, HttpSession session) {
+
+        // Check for login
+        if (session.getAttribute("userId") == null) {
+            return ResponseEntity.status(401).body("You need to be logged in to do this");
+        }
+
+        // Get all reimbursements
+        List<OutgoingReimbDTO> reimbList = reimbService.getAllStatusReimbs(
+                (String)session.getAttribute("role"),
+                (int)session.getAttribute("userId"),
+                status);
+
         // If reimb list is empty
-        List<Reimbursement> reimbList = reimbDAO.findAll();
         if (reimbList.isEmpty()) {
-            return ResponseEntity.noContent().build();
+            return ResponseEntity.status(204).body("There are no reimbursements here for you :(");
         }
 
-        // Get list of all PENDING reimbs
-        List<Reimbursement> allPendingReimbsList = new ArrayList<>();
-        for (Reimbursement reimb : reimbList) {
-            if (reimb.getStatus().equals("PENDING")) {
-                allPendingReimbsList.add(reimb);
-            }
-        }
-
-        // If user is a MANAGER
-        if (u.getRole().equals("MANAGER")) {
-            return ResponseEntity.ok(allPendingReimbsList);
-        }
-
-        // If user is NOT a MANAGER
-        List<Reimbursement> userReimbs = new ArrayList<>();
-        for (Reimbursement reimb : allPendingReimbsList) {
-            if (reimb.getUserId() == u.getUserId()) {
-                userReimbs.add(reimb);
-            }
-        }
-        return ResponseEntity.ok(userReimbs);
-    }
-
-    // TODO: Check if this is possible to reuse or combine == update/resolve
-    // Update desc of reimb
-    @PatchMapping("/{reimbId")
-    public ResponseEntity<Object> updateReimb(@RequestBody String desc, @PathVariable int reimbId) {
-        Reimbursement r = reimbDAO.findById(reimbId);
-        if (r == null) {
-            return ResponseEntity.status(404).body("Could not find reimbursement with ID of: " + reimbId);
-        }
-
-        r.setDescription(desc);
-        reimbDAO.save(r);
-        return ResponseEntity.accepted().body(r);
+        return ResponseEntity.ok(reimbList);
     }
 
     // Resolve a reimb (from PENDING to APPROVED/DENIED)
-    @PatchMapping("/{reimbId}")
-    public ResponseEntity<Object> resolveReimb(@RequestBody String status, @PathVariable int reimbId) {
-        Reimbursement r = reimbDAO.findById(reimbId);
-        if (r == null) {
+    @PatchMapping("/{reimbId}/resolve")
+    public ResponseEntity<Object> resolveReimb(@RequestBody String status, @PathVariable int reimbId, HttpSession session) {
+
+        // Check for login
+        if (session.getAttribute("userId") == null) {
+            return ResponseEntity.status(401).body("You need to be logged in to do this");
+        }
+
+        // Check if user is a manager
+        if (!session.getAttribute("role").equals("MANAGER")) {
+            return ResponseEntity.status(401).body("You must be a manager to do this");
+        }
+
+        // If reimb is not found
+        Optional<Reimbursement> optionalReimbursement = reimbService.findById(reimbId);
+        if (optionalReimbursement.isEmpty()) {
             return ResponseEntity.status(404).body("Could not find reimbursement with ID of: " + reimbId);
         }
 
+        // Reimb is found, set values
+        Reimbursement r = optionalReimbursement.get();
         r.setStatus(status);
-        reimbDAO.save(r);
-        return ResponseEntity.accepted().body(r);
+
+        return ResponseEntity.ok(reimbService.resolveReimb(r));
+    }
+
+
+    // Update desc of reimb
+    @PatchMapping("/{reimbId}/description")
+    public ResponseEntity<Object> updateReimb(@RequestBody String desc, @PathVariable int reimbId, HttpSession session) {
+
+        // Check for login
+        if (session.getAttribute("userId") == null) {
+            return ResponseEntity.status(401).body("You need to be logged in to do this");
+        }
+
+        // If reimb is not found
+        Optional<Reimbursement> optionalReimbursement = reimbService.findById(reimbId);
+        if (optionalReimbursement.isEmpty()) {
+            return ResponseEntity.status(404).body("Could not find reimbursement with ID of: " + reimbId);
+        }
+
+        // Reimb is found, check if user owns
+        if (optionalReimbursement.get().getUser().getUserId() != (int)session.getAttribute("userId")) {
+            return ResponseEntity.status(401).body("This is not yours to edit");
+        }
+
+        // set values
+        Reimbursement r = optionalReimbursement.get();
+        r.setDescription(desc);
+
+        return ResponseEntity.ok(reimbService.resolveReimb(r));
     }
 }

@@ -1,46 +1,23 @@
-package com.revature.models;
+package com.revature.models.dtos;
 
-import jakarta.persistence.*;
-import org.springframework.stereotype.Component;
+// Everything minus user object
 
-@Component
-@Entity
-@Table(name="reimbursements")
-public class Reimbursement {
-
-    @Id
-    @GeneratedValue(strategy= GenerationType.IDENTITY)
+public class OutgoingReimbDTO {
     private int reimbId;
-
-    @Column(nullable=false)
     private String description;
-
-    @Column(nullable=false)
     private int amount;
-
-    @Column(nullable=false)
     private String status;
+    private int userId;
 
-    @ManyToOne(fetch=FetchType.EAGER)
-    @JoinColumn(name="userId")
-    private User user;
-
-    public Reimbursement() {
+    public OutgoingReimbDTO() {
     }
 
-    public Reimbursement(String description, int amount, String status, User user) {
-        this.description = description;
-        this.amount = amount;
-        this.status = status;
-        this.user = user;
-    }
-
-    public Reimbursement(int reimbId, String description, int amount, String status, int userId) {
+    public OutgoingReimbDTO(int reimbId, String description, int amount, String status, int userId) {
         this.reimbId = reimbId;
         this.description = description;
         this.amount = amount;
         this.status = status;
-        this.user = user;
+        this.userId = userId;
     }
 
     public int getReimbId() {
@@ -75,22 +52,22 @@ public class Reimbursement {
         this.status = status;
     }
 
-    public User getUser() {
-        return user;
+    public int getUserId() {
+        return userId;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setUserId(int userId) {
+        this.userId = userId;
     }
 
     @Override
     public String toString() {
-        return "reimbursement{" +
+        return "OutgoingReimbDTO{" +
                 "reimbId=" + reimbId +
                 ", description='" + description + '\'' +
                 ", amount=" + amount +
                 ", status='" + status + '\'' +
-                ", user=" + user +
+                ", userId=" + userId +
                 '}';
     }
 }
