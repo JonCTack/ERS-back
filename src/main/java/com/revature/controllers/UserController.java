@@ -156,6 +156,21 @@ public class UserController {
 
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<?> logoutUser(HttpSession session) {
+
+        if (session.getAttribute("userId") == null) {
+            return ResponseEntity.badRequest().body("You need to be logged in to do this");
+        }
+        session.removeAttribute("userId");
+        session.removeAttribute("firstName");
+        session.removeAttribute("lastName");
+        session.removeAttribute("role");
+        session.invalidate();
+
+        return ResponseEntity.ok("User logged out successfully");
+    }
+
     /*
     // Get user
     @GetMapping("/{userId}")
